@@ -3,7 +3,7 @@
 import threading
 import time
 import psutil
-import pywinauto
+#import pywinauto
 import configparser
 import os
 import pyautogui

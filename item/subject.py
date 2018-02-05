@@ -4,7 +4,7 @@ import screen
 import define as d
 
 info = {
-    "GC": {
+    "GCG18": {
         "종목명": "GOLD",
         "시간단위": 240,
         "단위": 0.1,

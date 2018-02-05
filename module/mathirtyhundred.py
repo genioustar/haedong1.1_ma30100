@@ -3,6 +3,9 @@ import contract, subject, log, calc, time, my_util
 import log_result as res
 import define as d
 import db
+from define import *
+
+false = {'신규주문': False}
 
 def is_it_OK(subject_code, current_price):
     profit_tick = 20
@@ -10,9 +13,10 @@ def is_it_OK(subject_code, current_price):
     contract_cnt = 2
     mesu_medo_type = None
     min_y_prime = 0.03
+    print(calc.data[subject_code][DAY][MA])
+    print(calc.data[subject_code][DAY][CANDLE][i][DATE] == 가 전일 날짜(2017/01/01) 일때 )
 
-    false = {'신규주문': False}
-
+    return false
     # 300캔들이 없으면 매매 안함
     if calc.data[subject_code]['idx'] < 251:
         return false
@@ -64,7 +68,9 @@ def is_it_OK(subject_code, current_price):
 def is_it_sell(subject_code, current_price):
     index = calc.data[subject_code]['idx']
     sell_contents = None
-    
+
+    return false
+
     try:
         if contract.get_contract_count(subject_code) > 0:
             # 계약 보유중

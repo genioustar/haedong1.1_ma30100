@@ -3,6 +3,8 @@ import subject, contract, log, my_util
 import define as d
 import log_result as res
 import math
+from define import *
+import xlrd
 
 data = {}
 data['이동평균선'] = {}
@@ -32,6 +34,8 @@ result['틀틀틀맞'] = 0
 result['맞맞맞틀'] = 0
 result['틀틀맞맞'] = 0
 
+xls_day = []
+xls_week = []
 
 #처음에 우리가 계산해야할 이평선 일목균형표 고가,저가,체결시간,sar,볼린저밴드 등을 처음에 초기화 해주는 부분
 def create_data(subject_code):
@@ -62,6 +66,7 @@ def create_data(subject_code):
     data[subject_code]['고가'] = []
     data[subject_code]['저가'] = []
     data[subject_code]['체결시간'] = []
+    data[subject_code]['영업일자'] = []
     data[subject_code]['캔들'] = []
     data[subject_code]['SAR반전시간'] = []
     data[subject_code]['매매가능가'] = 0
@@ -105,77 +110,64 @@ def create_data(subject_code):
     #chart.create_figure(subject_code)
     #if d.get_mode() is d.REAL: chart.create_figure(subject_code)
 
+    if subject.info[subject_code]['전략'] == 'MA30100':
+        data[subject_code][WEEK] = {}
+        data[subject_code][DAY] = {}
 
-def create_d_data(subject_code):
-    data_day[subject_code] = {}
+        data[subject_code][WEEK][CANDLE] = []
+        data[subject_code][DAY][CANDLE] = []
+        data[subject_code][DAY][BOLLINGER_BAND] = {}
 
-    data_day[subject_code]['idx'] = -1
-    data_day[subject_code]['이동평균선'] = {}
-    data_day[subject_code]['지수이동평균선'] = {}
+        '''
+        MA30100 테스트를 위해 excel 파일에서 임시로 일, 주 데이터를 가져와서 이평선을 구함.
+        '''
 
-    # Add
-    data_day[subject_code]['이전반전시SAR값'] = [0]
+        wb = xlrd.open_workbook('C:\\Users\\porsche\\Desktop\\haedong1.1_waterfull\\haedong1.1\\day.xlsx')
+        sh = wb.sheet_by_index(0)
+        nrow = sh.nrows
 
-    for days in data_day['이동평균선']['일수']:
-        data_day[subject_code]['이동평균선'][days] = []
-        data_day[subject_code]['지수이동평균선'][days] = []
+        for i in range(0, nrow):
+            candle = {}
+            candle[DATE] = sh.cell_value(i, 0)
+            candle[OPEN] = sh.cell_value(i, 1)
+            candle[HIGH] = sh.cell_value(i, 2)
+            candle[LOW] = sh.cell_value(i, 3)
+            candle[CLOSE] = sh.cell_value(i, 4)
+            candle[VOLUME] = sh.cell_value(i, 5)
+            data[subject_code][DAY][CANDLE].append(candle)
 
-    data_day[subject_code]['일목균형표'] = {}
-    data_day[subject_code]['일목균형표']['전환선'] = []
-    data_day[subject_code]['일목균형표']['기준선'] = []
-    data_day[subject_code]['일목균형표']['선행스팬1'] = []
-    data_day[subject_code]['일목균형표']['선행스팬2'] = []
-    for index in range(0, 26):
-        data_day[subject_code]['일목균형표']['선행스팬1'].append(None)
-        data_day[subject_code]['일목균형표']['선행스팬2'].append(None)
+        wb = xlrd.open_workbook('C:\\Users\\porsche\\Desktop\\haedong1.1_waterfull\\haedong1.1\\week.xlsx')
+        sh = wb.sheet_by_index(0)
+        nrow = sh.nrows
 
-    data_day[subject_code]['현재가'] = []
-    data_day[subject_code]['시가'] = []
-    data_day[subject_code]['고가'] = []
-    data_day[subject_code]['저가'] = []
-    data_day[subject_code]['체결시간'] = []
-    data_day[subject_code]['캔들'] = []
-    data_day[subject_code]['SAR반전시간'] = []
-    data_day[subject_code]['매매가능가'] = 0
+        for i in range(0, nrow):
+            candle = {}
+            candle[DATE] = sh.cell_value(i, 0)
+            candle[OPEN] = sh.cell_value(i, 1)
+            candle[HIGH] = sh.cell_value(i, 2)
+            candle[LOW] = sh.cell_value(i, 3)
+            candle[CLOSE] = sh.cell_value(i, 4)
+            candle[VOLUME] = sh.cell_value(i, 5)
+            data[subject_code][WEEK][CANDLE].append(candle)
 
-    data_day[subject_code]['정배열연속틱'] = 1
-    data_day[subject_code]['추세연속틱'] = 1
-    data_day[subject_code]['추세'] = []
-    data_day[subject_code]['추세선'] = []
-    data_day[subject_code]['추세선밴드'] = {}
-    data_day[subject_code]['추세선밴드']['상한선'] = []
-    data_day[subject_code]['추세선밴드']['하한선'] = []
-    data_day[subject_code]['극점가'] = 0
-    data_day[subject_code]['현재플로우최극가'] = 0
+        data[subject_code][DAY][MA] = {}
+        data[subject_code][WEEK][MA] = {}
 
-    for index in range(0, 26):
-        data_day[subject_code]['추세선'].append(None)
-        data_day[subject_code]['추세선밴드']['상한선'].append(None)
-        data_day[subject_code]['추세선밴드']['하한선'].append(None)
 
-    data_day[subject_code]['매매선'] = []
-    data_day[subject_code]['결정계수'] = 0
-    data_day[subject_code]['그래프'] = {}
-    data_day[subject_code]['추세선기울기'] = 0
-    data_day[subject_code]['표준편차'] = 0
+def calc_ma_from_xls(subject_code, type, length, date, current_price):
+    i = 1
+    for i in range(1, len(data[subject_code][type][CANDLE])):
+        if str(date).replace('-', '/') <= str(data[subject_code][type][CANDLE][i][DATE]):
+            break
 
-    data_day[subject_code]['볼린저밴드'] = {}
-    data_day[subject_code]['볼린저밴드']['중심선'] = []
-    data_day[subject_code]['볼린저밴드']['상한선'] = []
-    data_day[subject_code]['볼린저밴드']['하한선'] = []
-    data_day[subject_code]['볼린저밴드']['캔들위치'] = []
-    data_day[subject_code]['고가그룹'] = []
-    data_day[subject_code]['저가그룹'] = []
-    data_day[subject_code]['고저점검색완료'] = False
+    sum = 0
+    for j in range(i - (length - 1), i):
+        sum = sum + data[subject_code][type][CANDLE][j][CLOSE]
 
-    data_day[subject_code]['매수'] = []
-    data_day[subject_code]['매도'] = []
+    sum = sum + current_price
 
-    data_day[subject_code]['플로우'] = []
-    data_day[subject_code]['SAR'] = []
+    return float(sum) / float(length)
 
-    # chart.create_figure(subject_code)
-    # if d.get_mode() is d.REAL: chart.create_figure(subject_code)
 
 def is_sorted(subject_code, lst):
     '''
@@ -222,14 +214,16 @@ def push(subject_code, price):
     lowest_price = float(price['저가'])
     current_time = int(price['체결시간'])
     volume = int(price['거래량'])
+    working_day = price['영업일자']
 
-    candle = data[subject_code]['idx'] + 1, start_price, highest_price, lowest_price, current_price, volume
+    candle = data[subject_code]['idx'] + 1, start_price, highest_price, lowest_price, current_price, volume, working_day
 
     data[subject_code]['현재가'].append(current_price)
     data[subject_code]['시가'].append(start_price)
     data[subject_code]['고가'].append(highest_price)
     data[subject_code]['저가'].append(lowest_price)
     data[subject_code]['체결시간'].append(current_time)
+    data[subject_code]['영업일자'].append(working_day)
     data[subject_code]['캔들'].append(candle)
 
     data[subject_code]['idx'] = data[subject_code]['idx'] + 1
@@ -331,6 +325,22 @@ def calc(subject_code):
             init_sar(subject_code)
         elif data[subject_code]['idx'] > 5:
             calculate_sar(subject_code)
+    elif subject.info[subject_code]['전략'] == 'MA30100':
+        calc_ma_line(subject_code)
+        day_ma = [3,5,10,20,30,60,120]
+        for day in day_ma:
+            data[subject_code][DAY][MA][day] = calc_ma_from_xls(subject_code, DAY, day, data[subject_code]['영업일자'][-1], data[subject_code]['현재가'][-1])
+
+        week_ma = [3,5,10,20,30,60]
+        for week in week_ma:
+            data[subject_code][WEEK][MA][week] = calc_ma_from_xls(subject_code, WEEK, week, data[subject_code]['영업일자'][-1],
+                                                                data[subject_code]['현재가'][-1])
+
+        # 전일 종가 금일 시가 셋팅
+        if(날짜가 오늘이면)
+        data[subject_code][DAY][OPEN] = data[subject_code][DAY][CANDLE][OPEN]
+        #print(data[subject_code][DAY][MA])
+
     else:
         calc_ma_line(subject_code)
 

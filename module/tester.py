@@ -58,7 +58,7 @@ def init():
                 candle['거래량'] += int(tick[2])
                 #candle['체결시간'] = tick[0]
                 candle['체결시간'] = tick[0].strftime('%Y%m%d%H%M%S')
-                candle['영업일자'] = tick[3].strftime('%Y%m%d')
+                candle['영업일자'] = tick[3]
                 
                 if tick_cnt == 0:
                     candle['시가'] = float(tick[1])
